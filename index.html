@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Quiz - Networks & Data Communications</title>
+<h1 style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); margin-top: 10px; white-space: nowrap; color: white;">
+  Computer Networks Module 1
+</h1>
+<style>
+    
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, 'Segoe UI', Tahoma, sans-serif; }
+  body {
+    background: #1b3351;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 720px;
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    padding: 28px 26px;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 16px;
+  }
+  .progress {
+    background: #e2e8f0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  .question {
+    font-size: 19px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: #1e293b;
+    cursor: pointer;
+    transition: 0.15s;
+    text-align: left;
+    line-height: 1.5;
+  }
+  .option:hover:not(.locked) { background: #eff6ff; border-color: #93c5fd; }
+  .option.correct {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #14532d;
+    font-weight: 600;
+  }
+  .option.wrong {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #7f1d1d;
+  }
+  .option.locked { cursor: default; }
+  .explanation {
+    margin-top: 18px;
+    background: #eff6ff;
+    border-left: 5px solid #3b82f6;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: #1e3a8a;
+    line-height: 1.7;
+  }
+  .explanation strong { color: #1d4ed8; }
+  .nextbtn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .nextbtn:hover { background: #1d4ed8; }
+  .nextbtn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .final {
+    text-align: center;
+    padding: 20px 0;
+  }
+  .final h2 { font-size: 26px; color: #0f172a; margin-bottom: 10px; }
+  .final p { font-size: 18px; color: #475569; margin-bottom: 20px; }
+  .restart {
+    padding: 12px 28px;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .restart:hover { background: #15803d; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="card" id="app"></div>
+
+<script>
+/* ============ Questions Data ============ */
+const questions = [
+  { q: "1. What does the term \"telecommunication\" mean?",
+    options: ["A) The exchange of data between two local devices", "B) Communication at a distance, which includes telephony, telegraph, and television", "C) The representation of information such as text and audio", "D) The physical path by which a message travels"],
+    correct: 1,
+    explanation: "The term telecommunication means communication at a distance, and it includes telephony, telegraph, and television." },
+  { q: "2. How is \"data communications\" defined in the material?",
+    options: ["A) The exchange of data between two devices via some form of transmission media", "B) A dedicated connection between two end systems", "C) The interconnection of a set of devices capable of communication", "D) Communication restricted to local networks"],
+    correct: 0,
+    explanation: "Data communications are defined as the exchange of data between two devices via some form of transmission media." },
+  { q: "3. Which of the following represents the different forms of data representation mentioned in the text?",
+    options: ["A) Hardware and software", "B) Simplex, half-duplex, and full-duplex", "C) Text, numbers, images, audio, and video", "D) Switches, routers, and modems"],
+    correct: 2,
+    explanation: "Information today comes in different forms of data representation such as text, numbers, images, audio, and video." },
+  { q: "4. How many components make up a data communications system?",
+    options: ["A) Three", "B) Four", "C) Five", "D) Six"],
+    correct: 2,
+    explanation: "A data communications system has five components: message, sender, receiver, transmission medium, and protocol." },
+  { q: "5. In a data communications system, what is the \"message\"?",
+    options: ["A) The physical path used for transmission", "B) The information or data to be communicated", "C) The device that sends the data", "D) The set of rules governing the communication"],
+    correct: 1,
+    explanation: "The message is the information (data) to be communicated, such as text, numbers, pictures, audio, and video." },
+  { q: "6. Which of the following can act as a sender in a data communications system?",
+    options: ["A) Only a mainframe computer", "B) A twisted-pair wire or coaxial cable", "C) A computer, workstation, telephone handset, or video camera", "D) Only a router or switch"],
+    correct: 2,
+    explanation: "The sender is the device that sends the data message, and it can be a computer, workstation, telephone handset, or video camera." },
+  { q: "7. What is the role of the \"transmission medium\" in data communications?",
+    options: ["A) It is the device that receives the message.", "B) It is the set of rules governing data communications.", "C) It is the physical path by which a message travels from sender to receiver.", "D) It routes packets between different networks."],
+    correct: 2,
+    explanation: "The transmission medium is the physical path by which a message travels from sender to receiver." },
+  { q: "8. Which of the following is an example of a transmission medium?",
+    options: ["A) A protocol", "B) A telephone handset", "C) A workstation", "D) Twisted-pair wire, coaxial cable, fiber-optic cable, or radio waves"],
+    correct: 3,
+    explanation: "Some examples of transmission media include twisted-pair wire, coaxial cable, fiber-optic cable, and radio waves." },
+  { q: "9. What is a \"protocol\" in the context of data communications?",
+    options: ["A) The physical path for data travel", "B) A set of rules that govern data communications", "C) The raw information to be communicated", "D) A physical connector joining a drop line to a main cable"],
+    correct: 1,
+    explanation: "A protocol is a set of rules that govern data communications, representing an agreement between communicating devices." },
+  { q: "10. What happens if two devices are connected but there is no protocol between them?",
+    options: ["A) They will communicate using half-duplex mode.", "B) The transmission medium will automatically translate the data.", "C) The devices may be connected but will not be communicating.", "D) The connection will become a point-to-point WAN."],
+    correct: 2,
+    explanation: "Without a protocol, two devices may be connected but not communicating, similar to a person speaking French not being understood by someone who only speaks Japanese." },
+  { q: "11. In which data flow mode is communication strictly unidirectional?",
+    options: ["A) Simplex", "B) Half-duplex", "C) Full-duplex", "D) Multipoint"],
+    correct: 0,
+    explanation: "In simplex mode, communication is unidirectional, like on a one-way street; only one device on a link can transmit while the other can only receive." },
+  { q: "12. How does half-duplex mode function?",
+    options: ["A) Communication is strictly one-way.", "B) Both stations can transmit and receive, but not at the same time.", "C) Both stations can transmit and receive simultaneously.", "D) Data is transmitted to all hosts in the network simultaneously."],
+    correct: 1,
+    explanation: "In half-duplex mode, each station can both transmit and receive, but not at the same time; when one sends, the other only receives, and vice versa." },
+  { q: "13. What is another name for full-duplex mode?",
+    options: ["A) Multipoint", "B) Duplex", "C) Simplex", "D) Circuit-switched"],
+    correct: 1,
+    explanation: "Full-duplex mode is also called duplex, where both stations can transmit and receive simultaneously." },
+  { q: "14. How is a \"network\" defined?",
+    options: ["A) The physical path connecting a sender and a receiver", "B) A set of rules governing data communications", "C) The interconnection of a set of devices capable of communication", "D) A single, isolated host"],
+    correct: 2,
+    explanation: "A network is the interconnection of a set of devices capable of communication." },
+  { q: "15. What are examples of a \"host\" (or end system) in a network?",
+    options: ["A) Routers and switches", "B) Modems and repeaters", "C) Large computers, desktops, laptops, workstations, cellular phones, or security systems", "D) Drop lines and cable taps"],
+    correct: 2,
+    explanation: "A device can be a host (end system) such as a large computer, desktop, laptop, workstation, cellular phone, or security system." },
+  { q: "16. What is the function of a connecting device like a modem in a network?",
+    options: ["A) To act as the final destination for a message", "B) To change the form of data", "C) To exclusively generate data messages", "D) To serve as a transmission medium"],
+    correct: 1,
+    explanation: "A connecting device, such as a modem, changes the form of data." },
+  { q: "17. What are the most important criteria a network must be able to meet?",
+    options: ["A) Cost, size, and location", "B) Performance, reliability, and security", "C) Hardware, software, and cabling", "D) Simplex, half-duplex, and full-duplex"],
+    correct: 1,
+    explanation: "The most important criteria a network must meet are performance, reliability, and security." },
+  { q: "18. What defines a point-to-point connection?",
+    options: ["A) More than two devices sharing a single link", "B) A single cable acting as a backbone for all devices", "C) A dedicated link between two devices where the entire capacity is reserved for their transmission", "D) A connection spanning multiple countries"],
+    correct: 2,
+    explanation: "A point-to-point connection provides a dedicated link between two devices, and the entire capacity of the link is reserved for transmission between them." },
+  { q: "19. What is a multipoint connection?",
+    options: ["A) A connection where exactly two devices share a link", "B) A connection in which more than two devices share a single link", "C) A dedicated link reserved for a single sender and receiver", "D) A physical topology where every device is connected to every other device"],
+    correct: 1,
+    explanation: "A multipoint (also called multidrop) connection is one in which more than two devices share a single link." },
+  { q: "20. What is a network's \"topology\"?",
+    options: ["A) The physical representation of the relationship of all links and linking devices (nodes) to one another", "B) The geographical coverage of a wide area network", "C) The set of rules governing communication across the network", "D) The form of data representation used on the network"],
+    correct: 0,
+    explanation: "The topology of a network is the physical representation of the relationship of all the links and linking devices (nodes) to one another." },
+  { q: "21. What are the four basic network topologies?",
+    options: ["A) Simplex, Half-duplex, Full-duplex, Multipoint", "B) LAN, WAN, Internet, Intranet", "C) Mesh, star, bus, and ring", "D) Point-to-point, switched, circuit, packet"],
+    correct: 2,
+    explanation: "There are four basic topologies possible: mesh, star, bus, and ring." },
+  { q: "22. In which topology does every device have a dedicated point-to-point link to every other device?",
+    options: ["A) Bus topology", "B) Star topology", "C) Mesh topology", "D) Ring topology"],
+    correct: 2,
+    explanation: "In a mesh topology, every device has a dedicated point-to-point link to every other device." },
+  { q: "23. What is the formula to calculate the number of physical links in a fully connected mesh network with n nodes?",
+    options: ["A) n(n+1)/2", "B) n(n-1)/2", "C) n²", "D) 2n - 1"],
+    correct: 1,
+    explanation: "To find the number of physical links in a fully connected mesh network with n nodes, the formula n(n-1)/2 is used." },
+  { q: "24. How many links are required for a fully connected mesh network with 5 nodes?",
+    options: ["A) 5", "B) 10", "C) 15", "D) 20"],
+    correct: 1,
+    explanation: "Using the formula n(n-1)/2 for n=5 results in 5(4)/2 = 10 links." },
+  { q: "25. What is the key characteristic of a star topology?",
+    options: ["A) Every device connects directly to every other device.", "B) A single cable acts as a backbone for all devices.", "C) Each device has a dedicated point-to-point link only to a central controller, usually called a hub.", "D) Each device serves as a repeater for the next device."],
+    correct: 2,
+    explanation: "In a star topology, each device has a dedicated point-to-point link only to a central controller, usually called a hub." },
+  { q: "26. Which topology features one long cable that acts as a backbone to link all devices in a multipoint connection?",
+    options: ["A) Mesh", "B) Star", "C) Bus", "D) Ring"],
+    correct: 2,
+    explanation: "A bus topology is multipoint in which one long cable acts as a backbone to link all the devices in a network." },
+  { q: "27. In a bus topology, what is a \"drop line\"?",
+    options: ["A) A connector linking two networks together", "B) A connection running between the device and the main cable", "C) A device that amplifies the signal", "D) A switch that determines packet destinations"],
+    correct: 1,
+    explanation: "A drop line is a connection running between the device and the main cable in a bus topology." },
+  { q: "28. What is the function of a \"tap\" in a bus topology?",
+    options: ["A) It acts as a central controller for all nodes.", "B) It is a connector that connects the drop line with the main cable.", "C) It serves as a repeater to boost the signal.", "D) It connects multiple networks to form an internet."],
+    correct: 1,
+    explanation: "A tap is a connector that connects the drop line with the main cable." },
+  { q: "29. How is a ring topology structured?",
+    options: ["A) Every device has a dedicated link to a central hub.", "B) All devices share a single long backbone cable.", "C) Each device has a dedicated point-to-point connection with only the two devices on either side of it.", "D) Each device links to every other device in the network."],
+    correct: 2,
+    explanation: "In a ring topology, each device has a dedicated point-to-point connection with only the two devices on either side of it." },
+  { q: "30. In a ring topology, what role does each computer play to ensure the signal reaches its destination?",
+    options: ["A) A modem", "B) A router", "C) A switch", "D) A repeater"],
+    correct: 3,
+    explanation: "In a ring topology, each computer serves as a repeater to increase the signal and send it to the next device." },
+  { q: "31. Which criteria are used to distinguish different types of networks?",
+    options: ["A) Performance, reliability, and security", "B) Message, sender, and receiver", "C) Size, geographical coverage, and ownership", "D) Media type, transmission speed, and duplexing"],
+    correct: 2,
+    explanation: "A few criteria such as size, geographical coverage, and ownership are used to distinguish one type of network from another." },
+  { q: "32. What type of ownership is typical for a Local Area Network (LAN)?",
+    options: ["A) Publicly owned by telecommunications companies", "B) Usually privately owned", "C) Leased from government agencies", "D) Owned collectively by Internet Service Providers"],
+    correct: 1,
+    explanation: "A local area network (LAN) is usually privately owned." },
+  { q: "33. What is the typical geographical coverage of a LAN?",
+    options: ["A) A town or a state", "B) A single office, building, or campus", "C) An entire country", "D) Global"],
+    correct: 1,
+    explanation: "A LAN connects some hosts in a single office, building, or campus." },
+  { q: "34. How are hosts uniquely defined within a LAN?",
+    options: ["A) By the type of transmission media they use", "B) By an identifier (an address)", "C) By their physical location in the building", "D) By the central hub"],
+    correct: 1,
+    explanation: "Each host in a LAN has an identifier (an address) that uniquely defines the host in the LAN." },
+  { q: "35. What addressing information is carried by a packet sent by a host to another host in a LAN?",
+    options: ["A) Only the destination host's address", "B) Only the source host's address", "C) Both the source host's and the destination host's addresses", "D) The IP address of the nearest router"],
+    correct: 2,
+    explanation: "A packet sent by a host to another host carries both the source host's and the destination host's addresses." },
+  { q: "36. In the past, how did a LAN with a common cable operate when a packet was sent?",
+    options: ["A) The packet was routed through a switch directly to the destination.", "B) The packet was sent from one host and received by all hosts.", "C) The packet was dropped if the network was busy.", "D) The packet was converted to an analog signal by a modem."],
+    correct: 1,
+    explanation: "In the past, all hosts were connected through a common cable, which meant that a packet sent from one host to another was received by all hosts." },
+  { q: "37. What device do most modern LANs use to efficiently route packets?",
+    options: ["A) A simple repeater", "B) A long common cable", "C) A smart connecting switch", "D) A multidrop tap"],
+    correct: 2,
+    explanation: "Today, most LANs use a smart connecting switch." },
+  { q: "38. How does a smart connecting switch improve packet delivery in a LAN?",
+    options: ["A) By broadcasting every packet to all hosts", "B) By automatically acting as a repeater for every signal", "C) By recognizing the destination address and guiding the packet to its destination without sending it to all other hosts", "D) By permanently storing every packet sent on the network"],
+    correct: 2,
+    explanation: "A smart connecting switch is able to recognize the destination address of the packet and guide the packet to its destination without sending it to all other hosts." },
+  { q: "39. What is a key difference in geographical span between a LAN and a WAN?",
+    options: ["A) A LAN spans a country, while a WAN is limited to an office.", "B) A LAN is limited in size, whereas a WAN has a wider span, covering a town, state, country, or the world.", "C) Both have the same geographical limits but differ in ownership.", "D) A LAN covers multiple cities, while a WAN only covers a single campus."],
+    correct: 1,
+    explanation: "A LAN is normally limited in size; a WAN has a wider geographical span, spanning a town, a state, a country, or even the world." },
+  { q: "40. What type of devices do LANs and WANs primarily interconnect, respectively?",
+    options: ["A) LANs interconnect connecting devices; WANs interconnect hosts.", "B) Both interconnect end systems only.", "C) LANs interconnect hosts; WANs interconnect connecting devices such as switches, routers, or modems.", "D) LANs interconnect switches; WANs interconnect servers."],
+    correct: 2,
+    explanation: "A LAN interconnects hosts; a WAN interconnects connecting devices such as switches, routers, or modems." },
+  { q: "41. How does the ownership of a WAN typically differ from that of a LAN?",
+    options: ["A) A WAN is privately owned, while a LAN is run by communication companies.", "B) A WAN is normally created and run by communication companies and leased by an organization, whereas a LAN is normally privately owned.", "C) Both are strictly leased from communication companies.", "D) Both are completely public networks."],
+    correct: 1,
+    explanation: "A LAN is normally privately owned by the organization that uses it; a WAN is normally created and run by communication companies and leased by an organization that uses it." },
+  { q: "42. What are the two distinct examples of WANs seen today?",
+    options: ["A) Simplex WANs and Duplex WANs", "B) Point-to-point WANs and switched WANs", "C) Star WANs and Mesh WANs", "D) Local WANs and Global WANs"],
+    correct: 1,
+    explanation: "We see two distinct examples of WANs today: point-to-point WANs and switched WANs." },
+  { q: "43. What defines a point-to-point WAN?",
+    options: ["A) A network with more than two ends", "B) A network that connects two communicating devices through a transmission media (cable or air)", "C) A completely wireless network", "D) A LAN connected directly to a mainframe"],
+    correct: 1,
+    explanation: "A point-to-point WAN is a network that connects two communicating devices through a transmission media (cable or air)." },
+  { q: "44. What characterizes a switched WAN?",
+    options: ["A) It connects exactly two devices.", "B) It uses a single continuous cable.", "C) It is a network with more than two ends.", "D) It relies exclusively on simplex communication."],
+    correct: 2,
+    explanation: "A switched WAN is a network with more than two ends." },
+  { q: "45. In networking, what is an \"internet\" (lowercase i)?",
+    options: ["A) The global system of interconnected networks", "B) A switched network in which a switch connects at least two links together", "C) A local area network restricted to a single building", "D) A point-to-point connection between a PC and a router"],
+    correct: 1,
+    explanation: "An internet is a switched network in which a switch connects at least two links together. (Note: It is also described as two or more networks that can communicate with each other)" },
+  { q: "46. What are the two most common types of switched networks?",
+    options: ["A) Simplex-switched and duplex-switched", "B) Circuit-switched and packet-switched", "C) Point-to-point and multipoint", "D) Star-switched and ring-switched"],
+    correct: 1,
+    explanation: "The two most common types of switched networks are circuit-switched and packet-switched networks." },
+  { q: "47. How does a circuit-switched network operate?",
+    options: ["A) Data is transferred in packets that take different paths.", "B) A dedicated connection, called a circuit, is always available between the two end systems.", "C) Data is broadcast to all hosts simultaneously.", "D) Communication occurs without the need for protocols."],
+    correct: 1,
+    explanation: "In a circuit-switched network, a dedicated connection, called a circuit, is always available between the two end systems." },
+  { q: "48. How does data transfer occur in a packet-switched network?",
+    options: ["A) Through a permanent, dedicated circuit", "B) By sending unaddressed data down a common cable", "C) Data transfers into the network in the form of packets, and each packet uses a different path toward the end system.", "D) Exclusively through simplex mode"],
+    correct: 2,
+    explanation: "In a packet-switched network, data transfers into a network in the form of packets, and each packet uses a different path toward the end system." },
+  { q: "49. What is the difference between an \"internet\" and the \"Internet\"?",
+    options: ["A) They are identical terms.", "B) An internet (lowercase i) is two or more networks communicating; the Internet (uppercase I) is composed of thousands of interconnected networks.", "C) An internet refers to hardware, while the Internet refers to software.", "D) An internet is a WAN, while the Internet is a LAN."],
+    correct: 1,
+    explanation: "An internet (lowercase i) is two or more networks that can communicate with each other, whereas the most notable internet is called the Internet (uppercase I), which is composed of thousands of interconnected networks." },
+  { q: "50. Fundamentally, what happens when we communicate?",
+    options: ["A) We establish a point-to-point connection.", "B) We are sharing information, which can be local or remote.", "C) We are changing the form of data using a modem.", "D) We route packets through multiple switches."],
+    correct: 1,
+    explanation: "When we communicate, we are sharing information, and this sharing can be local or remote." },
+  { q: "51. What is another term used in the text to describe a \"host\" in a network?",
+    options: ["A) Connecting device", "B) End system", "C) Switch", "D) Drop line"],
+    correct: 1,
+    explanation: "In the definition of a network, a device can be a host, which is also called an end system." },
+  { q: "52. What is an alternative name for a multipoint connection?",
+    options: ["A) Multidrop connection", "B) Point-to-point connection", "C) Star connection", "D) Duplex connection"],
+    correct: 0,
+    explanation: "A multipoint connection is also called a multidrop connection." },
+  { q: "53. What is the common term used for linking devices when discussing network topology?",
+    options: ["A) Taps", "B) Backbones", "C) Nodes", "D) Stations"],
+    correct: 2,
+    explanation: "The topology of a network is the physical representation of the relationship of all the links and linking devices, which are usually called nodes." },
+  { q: "54. In a star topology, what is the specific name given to the central controller?",
+    options: ["A) Repeater", "B) Node", "C) Tap", "D) Hub"],
+    correct: 3,
+    explanation: "In a star topology, each device has a dedicated point-to-point link only to a central controller, usually called a hub." },
+  { q: "55. According to the material, what can be the scale of a Local Area Network (LAN)?",
+    options: ["A) It must cover at least an entire state or country.", "B) It can only consist of two PCs and a printer in a home office.", "C) It can be as simple as two PCs and a printer, or it can extend throughout a company including audio and video devices.", "D) It strictly interconnects routers and switches across multiple cities."],
+    correct: 2,
+    explanation: "Depending on the needs of an organization, a LAN can be as simple as two PCs and a printer in someone's home office, or it can extend throughout a company and include audio and video devices." },
+  { q: "56. What specific action must a switch perform in an internet (switched network)?",
+    options: ["A) It must broadcast every packet to all hosts.", "B) It needs to forward data from a network to another network when required.", "C) It must convert digital signals to analog signals.", "D) It must act as the ultimate end system for the data."],
+    correct: 1,
+    explanation: "A switch needs to forward data from a network to another network when required." },
+  { q: "57. Based on the conceptual view of the Internet today (Figure 1.15), what high-level structures connect different provider networks together?",
+    options: ["A) Drop lines and taps", "B) Backbones and peering points", "C) Single common cables", "D) Individual LAN hubs"],
+    correct: 1,
+    explanation: "The conceptual view of the Internet today shows provider networks interconnected via Backbones and peering points." },
+  { q: "58. In the conceptual view of the Internet today, what type of network connects directly to the provider networks at the lowest level?",
+    options: ["A) Backbone networks", "B) Customer networks", "C) Peering networks", "D) Mainframe networks"],
+    correct: 1,
+    explanation: "In the hierarchical diagram of the Internet, Customer networks are shown connecting to Provider networks." }
+];
+
+/* ============ Quiz Logic ============ */
+const app = document.getElementById('app');
+let currentIndex = 0;
+let answered = false;
+let score = 0;
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[currentIndex];
+  const total = questions.length;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <span>Question ${currentIndex + 1} of ${total}</span>
+      <span class="progress">Score: ${score}</span>
+    </div>
+    <div class="question">${q.q}</div>
+    <div class="options" id="options"></div>
+    <div class="explanation hidden" id="explanation">
+      <strong>✅ Correct Answer:</strong> ${q.options[q.correct]}<br><br>
+      <strong>💡 Explanation:</strong> ${q.explanation}
+    </div>
+    <button class="nextbtn" id="nextBtn" disabled>Next →</button>
+  `;
+
+  const optionsBox = document.getElementById('options');
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.textContent = opt;
+    div.onclick = () => selectOption(i, div);
+    optionsBox.appendChild(div);
+  });
+
+  document.getElementById('nextBtn').onclick = nextQuestion;
+
+  if (currentIndex === total - 1) {
+    document.getElementById('nextBtn').textContent = 'Show Results 🎯';
+  }
+}
+
+function selectOption(index, el) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentIndex];
+  const allOptions = document.querySelectorAll('.option');
+  allOptions.forEach(o => o.classList.add('locked'));
+
+  if (index === q.correct) {
+    el.classList.add('correct');
+    score++;
+  } else {
+    el.classList.add('wrong');
+    allOptions[q.correct].classList.add('correct');
+  }
+
+  document.querySelector('.progress').textContent = `Score: ${score}`;
+  document.getElementById('explanation').classList.remove('hidden');
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function nextQuestion() {
+  if (currentIndex < questions.length - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+}
+
+function showResults() {
+  const total = questions.length;
+  app.innerHTML = `
+    <div class="final">
+      <h2>🎉 Quiz Complete!</h2>
+      <p>Your Score: <strong>${score}</strong> out of <strong>${total}</strong></p>
+      <p>Percentage: ${Math.round((score / total) * 100)}%</p>
+      <button class="restart" id="restartBtn">Restart Quiz ↻</button>
+    </div>
+  `;
+  document.getElementById('restartBtn').onclick = () => {
+    currentIndex = 0;
+    score = 0;
+    renderQuestion();
+  };
+}
+
+renderQuestion();
+</script>
+</body>
+</html>
