@@ -11,7 +11,7 @@
     
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, 'Segoe UI', Tahoma, sans-serif; }
   body {
-    background: #1b3351;
+    background: #3b3f44;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -85,13 +85,14 @@
     line-height: 1.7;
   }
   .explanation strong { color: #1d4ed8; }
-  .nextbtn {
-    display: block;
-    width: 100%;
+  .nav-buttons {
+    display: flex;
+    gap: 10px;
     margin-top: 20px;
+  }
+  .navbtn {
+    flex: 1;
     padding: 14px;
-    background: #2563eb;
-    color: #fff;
     border: none;
     border-radius: 12px;
     font-size: 16px;
@@ -99,8 +100,17 @@
     cursor: pointer;
     transition: 0.15s;
   }
-  .nextbtn:hover { background: #1d4ed8; }
-  .nextbtn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .prevbtn {
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .prevbtn:hover:not(:disabled) { background: #cbd5e1; }
+  .nextbtn {
+    background: #2563eb;
+    color: #fff;
+  }
+  .nextbtn:hover:not(:disabled) { background: #1d4ed8; }
+  .navbtn:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
   .final {
     text-align: center;
     padding: 20px 0;
@@ -365,13 +375,14 @@ const questions = [
 /* ============ Quiz Logic ============ */
 const app = document.getElementById('app');
 let currentIndex = 0;
-let answered = false;
 let score = 0;
+// Store user's answers to persist when navigating back/forward.
+let userAnswers = questions.map(() => ({ selectedIndex: null, answered: false }));
 
 function renderQuestion() {
-  answered = false;
   const q = questions[currentIndex];
   const total = questions.length;
+  const state = userAnswers[currentIndex];
 
   app.innerHTML = `
     <div class="topbar">
@@ -380,11 +391,16 @@ function renderQuestion() {
     </div>
     <div class="question">${q.q}</div>
     <div class="options" id="options"></div>
-    <div class="explanation hidden" id="explanation">
+    <div class="explanation ${state.answered ? '' : 'hidden'}" id="explanation">
       <strong>✅ Correct Answer:</strong> ${q.options[q.correct]}<br><br>
       <strong>💡 Explanation:</strong> ${q.explanation}
     </div>
-    <button class="nextbtn" id="nextBtn" disabled>Next →</button>
+    <div class="nav-buttons">
+      <button class="navbtn prevbtn" id="prevBtn" ${currentIndex === 0 ? 'disabled' : ''}>← Previous</button>
+      <button class="navbtn nextbtn" id="nextBtn" ${state.answered ? '' : 'disabled'}>
+        ${currentIndex === total - 1 ? 'Show Results 🎯' : 'Next →'}
+      </button>
+    </div>
   `;
 
   const optionsBox = document.getElementById('options');
@@ -392,20 +408,30 @@ function renderQuestion() {
     const div = document.createElement('div');
     div.className = 'option';
     div.textContent = opt;
-    div.onclick = () => selectOption(i, div);
+
+    if (state.answered) {
+      div.classList.add('locked');
+      if (i === q.correct) {
+        div.classList.add('correct');
+      } else if (i === state.selectedIndex) {
+        div.classList.add('wrong');
+      }
+    } else {
+      div.onclick = () => selectOption(i, div);
+    }
     optionsBox.appendChild(div);
   });
 
   document.getElementById('nextBtn').onclick = nextQuestion;
-
-  if (currentIndex === total - 1) {
-    document.getElementById('nextBtn').textContent = 'Show Results 🎯';
-  }
+  document.getElementById('prevBtn').onclick = prevQuestion;
 }
 
 function selectOption(index, el) {
-  if (answered) return;
-  answered = true;
+  const state = userAnswers[currentIndex];
+  if (state.answered) return;
+
+  state.answered = true;
+  state.selectedIndex = index;
   const q = questions[currentIndex];
   const allOptions = document.querySelectorAll('.option');
   allOptions.forEach(o => o.classList.add('locked'));
@@ -432,6 +458,13 @@ function nextQuestion() {
   }
 }
 
+function prevQuestion() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderQuestion();
+  }
+}
+
 function showResults() {
   const total = questions.length;
   app.innerHTML = `
@@ -445,6 +478,7 @@ function showResults() {
   document.getElementById('restartBtn').onclick = () => {
     currentIndex = 0;
     score = 0;
+    userAnswers = questions.map(() => ({ selectedIndex: null, answered: false }));
     renderQuestion();
   };
 }
